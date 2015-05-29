@@ -7,17 +7,29 @@ import os
 import re
 import csv
 
-def makeDict(tree,fname,csvOut,colNames):
+def makeDict(tree,fileID,csvOut,colNames):
 	## Get the files parsed.
 	# phTree = minidom.parse(os.path.join(myPath,'phones/',fname))
-	# syllTree = minidom.parse(os.path.join(,fname))
-	## Pick up a list of all ph's
+	try: 
+		syllTree = minidom.parse('/Users/oriana/Corpora/nxt_switchboard_ann/xml/syllables/'+fileID+'.syllables.xml')
+	except ValueError as e:
+		print "problem opening %s syllable file" % fileID
+		print e
+
+	## Prepare lists of things to search through
 	phs = tree.getElementsByTagName('ph')
+	sylls = syllTree.getElementsByTagName('syllable')
+	syllPhones = syllTree.getElementsByTagName('nite:child')
+	syllHrefs = [s.getAttribute('href') for s in syllPhones]
+	
+
+
 	## Pick up all the [t] (and [d]?)
 	tphs = [p for p in phs if p.firstChild.data=='t']
 	dictList = []
 	for t in tphs:
 		valDict = {}
+		valDict['fileID'] = fileID
 		for k in t.attributes.keys():
 			valDict[k] = t.getAttribute(k)
 		## Previous segments
@@ -28,19 +40,19 @@ def makeDict(tree,fname,csvOut,colNames):
 				print "Too low!"
 				break
 			else:
-				prevSeg = phs[phs.index(t)+count]
+				prevSeg = phs[phs.index(t)+count].firstChild.data
 			if prevSeg != 'SIL':
 				# print 'Stopping now!'
 				break
 			else:
 				count -= 1
 				# print 'Increasing count'
-		valDict['prevSeg'] = prevSeg.firstChild.data
+		valDict['prevSeg'] = prevSeg
 		## Following segment
 		count = 1 
 		while count > 0:
 			try:
-				follSeg = phs[phs.index(t)+count]
+				follSeg = phs[phs.index(t)+count].firstChild.data
 				# print follSeg
 			except IndexError:
 				follSeg = "FILE-END"
@@ -52,7 +64,10 @@ def makeDict(tree,fname,csvOut,colNames):
 			else:
 				count += 1
 				print 'Increasing count'
-		valDict['follSeg'] = follSeg.firstChild.data
+		valDict['follSeg'] = follSeg
+
+		## Find the ID of the syllable I'm in 
+
 
 		## Am I in a stressed syllable? p = primary, s=secondary, n=none. Some syllables have no stress attribute.
 
@@ -63,7 +78,7 @@ def makeDict(tree,fname,csvOut,colNames):
 		csvOut.writerow([d[v] for v in header])
 	return dictList
 
-header = ['msstate','nite:start','nite:end','nite:id','prevSeg','follSeg']
+header = ['fileID','msstate','nite:start','nite:end','nite:id','prevSeg','follSeg']
 
 def xmlExtract(fileName,dataName,colNames):
     with open(dataName, 'wb') as data:
@@ -72,20 +87,22 @@ def xmlExtract(fileName,dataName,colNames):
         for root, dirs, files in os.walk('/Users/oriana/Corpora/nxt_switchboard_ann/xml/phones'):
             for fname in files:
                 if re.search(fileName, fname):
-                    try:
-                        tree = minidom.parse(os.path.join(root,fname))
-                        print fname
-                        makeDict(tree,fname,csvOut,colNames)
-                    except ValueError as e:
-                        print "problem opening %s" % fname
-                        print e
+					fileID = re.search(".*(?=\.[a-z]*\.xml)",fname).group()
+					try:
+						tree = minidom.parse(os.path.join(root,fname))
+						print fname
+						makeDict(tree,fileID,csvOut,colNames)
+					except ValueError as e:
+						print "problem opening %s" % fname
+						print e
+
                     
 
 
 
 # myPath = '/Users/oriana/Corpora/nxt_switchboard_ann/xml/'
 xmlExtract("sw4168.*xml","sw4168-flapping-switchboard.txt",header)
-xmlExtract(".*xml","flapping-switchboard.txt",header)
+# xmlExtract(".*xml","flapping-switchboard.txt",header)
 
 
 
