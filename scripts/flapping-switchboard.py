@@ -1,4 +1,4 @@
-## Script for working with nxt swtichboard corpus annotations
+## Script for working with nxt switchboard corpus annotations
 ## Oriana 17-05-2015
 
 
@@ -6,6 +6,9 @@ from xml.dom import minidom
 import os
 import re
 import csv
+
+inputDir = '/Users/oriana/Corpora/nxt_switchboard_ann/xml/' # This should point to the file containing folders for each of the XML annotation types
+outputDir = '~/dissertation/data/switchboard_nxt/' # Where the output file goes. 
 
 def makeDict(tree,fileID,csvOut,colNames):
 	## Get the files parsed.
@@ -40,6 +43,8 @@ def makeDict(tree,fileID,csvOut,colNames):
 		valDict['fileID'] = fileID
 		for k in t.attributes.keys():
 			valDict[k] = t.getAttribute(k)
+		## Segment duration
+		valDict['duration'] = float(valDict['nite:end'])-float(valDict['nite:start'])
 		## Previous segments
 		count = -1 
 		while count < 0:
@@ -103,13 +108,13 @@ def makeDict(tree,fileID,csvOut,colNames):
 		csvOut.writerow([d[v] for v in header])
 	return dictList
 
-header = ['fileID','msstate','nite:start','nite:end','nite:id','prevSeg','follSeg','wordOrth','wordStress','wordID']
+header = ['fileID','msstate','nite:start','nite:end','duration','nite:id','prevSeg','follSeg','wordOrth','wordStress','wordID']
 
 def xmlExtract(fileName,dataName,colNames):
     with open(dataName, 'wb') as data:
         csvOut = csv.writer(data,delimiter="\t",quotechar='"')
         csvOut.writerow(colNames)
-        for root, dirs, files in os.walk('/Users/oriana/Corpora/nxt_switchboard_ann/xml/phones'):
+        for root, dirs, files in os.walk(inputDir+'phones'):
             for fname in files:
                 if re.search(fileName, fname):
 					fileID = re.search(".*(?=\.[a-z]*\.xml)",fname).group()
@@ -130,7 +135,7 @@ xmlExtract("sw4168.*xml","sw4168-flapping-switchboard.txt",header)
 # xmlExtract(".*xml","flapping-switchboard.txt",header)
 
 
-
+# Print summary stats. 
 
 
 
