@@ -94,12 +94,22 @@ def makeDict(tree,fileID,csvOut,colNames):
 				else: 
 					pass
 
-
 		valDict['wordOrth'] = myWord.getAttribute('orth')
 		valDict['wordStress'] = myWord.getAttribute('stressProfile')
 		valDict['wordID'] = myWord.getAttribute('nite:id')
 
+		## At word boundary? 		
+		print re.search('(.*)_.*',t.getAttribute('nite:id')).groups() 
+		print re.search('(.*)_.*',phs[phs.index(t)-1].getAttribute('nite:id')).groups()
+		if re.search('(.*)_.*',t.getAttribute('nite:id')).groups() == re.search('(.*)_.*',phs[phs.index(t)-1].getAttribute('nite:id')).groups():
+				valDict['wordBoundaryLeft'] = "N"
+		else: 
+			valDict['wordBoundaryLeft'] = "Y"
 
+		if re.search('(.*)_.*',t.getAttribute('nite:id')).groups() == re.search('(.*)_.*',phs[phs.index(t)+1].getAttribute('nite:id')).groups():
+				valDict['wordBoundaryRight'] = "N"
+		else: 
+			valDict['wordBoundaryRight'] = "Y"
 
 		# mySyll.getAttribute('msstate') == t.getAttribute('msstate')
 		dictList.append(valDict)
@@ -108,7 +118,7 @@ def makeDict(tree,fileID,csvOut,colNames):
 		csvOut.writerow([d[v] for v in header])
 	return dictList
 
-header = ['fileID','msstate','nite:start','nite:end','duration','nite:id','prevSeg','follSeg','wordOrth','wordStress','wordID']
+header = ['fileID','msstate','nite:start','nite:end','duration','nite:id','prevSeg','follSeg','wordOrth','wordStress','wordID','wordBoundaryLeft','wordBoundaryRight']
 
 def xmlExtract(fileName,dataName,colNames):
     with open(dataName, 'wb') as data:
@@ -136,7 +146,5 @@ xmlExtract("sw4168.*xml","sw4168-flapping-switchboard.txt",header)
 
 
 # Print summary stats. 
-
-
 
 
