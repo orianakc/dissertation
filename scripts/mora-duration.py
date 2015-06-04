@@ -16,7 +16,7 @@ def makeDict(tree,fname,csvOut,colNames):
 		moraPhones = mora.getElementsByTagName('Phone')
 
 		if len(moraPhones) == 0:
-			pass
+			break
 		else:
 			valDict['file'] = fname
 			valDict['MoraStart'] = moraPhones[0].attributes['PhoneStartTime'].value
