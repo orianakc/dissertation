@@ -15,15 +15,12 @@ def makeDict(tree,fname,csvOut,colNames):
 		valDict = {}
 		moraPhones = mora.getElementsByTagName('Phone')
 
-		if len(moraPhones) == 0:
-			break
-		else:
+		if len(moraPhones) > 0:
 			valDict['file'] = fname
 			valDict['MoraStart'] = moraPhones[0].attributes['PhoneStartTime'].value
 			valDict['MoraEnd'] = moraPhones[-1].attributes['PhoneEndTime'].value
 			valDict['MoraDuration'] = float(valDict['MoraEnd']) - float(valDict['MoraStart'])
 			valDict['MoraEntity'] = mora.getAttribute('MoraEntity').encode('utf-8')
-			dictList.append(valDict)
 			valDict['ID'] = mora
 			dictList.append(valDict)
 	
