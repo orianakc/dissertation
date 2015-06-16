@@ -86,12 +86,22 @@ def makeDict(speaker,csvOut,colNames):
 			childPhones = getChildren(s,speaker.phonesTree)
 			if t.getAttribute('nite:id') in childPhones:
 				valDict['syllableNode'] = s
+				try:
+					valDict['syllable'] = ' '.join([speaker.phonesTree.getElementById(n).firstChild.data for n in childPhones])
+				except:
+					print "Can't get syllable info for " + speaker.ID + s.getAttribute('nite:id')
+					valDict['syllable'] = 'ERROR'
 				syllIndex = sylls.index(s)
 				# print "Found syllable node : " + valDict['syllableNode'].getAttribute('nite:id')
 				break
 			else:
 				continue
 		assert valDict['syllableNode'], "Couldn't find a syllable for "+ t 
+		try:
+			nextSyllChild = getChildren(sylls[syllIndex+1],speaker.phonesTree)
+			valDict['nextSyll'] = ' '.join([speaker.phonesTree.getElementById(n).firstChild.data for n in nextSyllChild])
+		except:
+			valDict['nextSyll'] = "NA"
 
 		## Is the next syllable stressed?
 		valDict['follSegSyllable'] = 'ERROR'
@@ -101,10 +111,10 @@ def makeDict(speaker,csvOut,colNames):
 				childPhones = getChildren(s,speaker.phonesTree)
 				if follSeg.getAttribute('nite:id') in childPhones:
 					valDict['follSegSyllable'] = s
-					try:
+					if valDict['follSegSyllable'].hasAttribute('stress'):
 						valDict['follSyllStress'] = valDict['follSegSyllable'].getAttribute('stress')
-					except Exception, e:
-						raise e
+					else:
+						valDict['follSyllStress'] = 'NA'
 					break
 				
 				else:
@@ -160,7 +170,7 @@ def makeDict(speaker,csvOut,colNames):
 		csvOut.writerow([d[v] for v in header])
 	return dictList
 
-header = ['fileID','msstate','nite:start','nite:end','duration','nite:id','prevSeg','follSeg','stressedSyll','follSyllStress','wordOrth','wordStress','wordID','wordBoundaryLeft','wordBoundaryRight','flappingEnvt']
+header = ['fileID','msstate','nite:start','nite:end','duration','nite:id','prevSeg','follSeg','stressedSyll','follSyllStress','wordOrth','wordStress','wordID','wordBoundaryLeft','wordBoundaryRight','flappingEnvt','syllable','nextSyll']
 
 potentialTokens = 0
 
@@ -185,8 +195,8 @@ def xmlExtract(fileName,dataName,colNames):
 
 
 # myPath = '/Users/oriana/Corpora/nxt_switchboard_ann/xml/'
-# xmlExtract("sw2005.*xml","2005-flapping-switchboard.txt",header)
-xmlExtract(".*xml","flapping-switchboard.txt",header)
+xmlExtract("sw2005.*xml","2005-flapping-switchboard.txt",header)
+# xmlExtract(".*xml","flapping-switchboard.txt",header)
 
 
 # Print summary stats. 
