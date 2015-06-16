@@ -27,7 +27,7 @@ def makeDict(speaker,csvOut,colNames):
 	# except ValueError as e:
 	# 	print "problem opening %s phonword file" % fileID
 	# 	print e
-	tags = ['phones','syllables','phonwords','phrases']
+	tags = ['phones','syllables','phonwords']
 	for t in tags:
 		speaker.makeTree(t)
 
@@ -37,8 +37,7 @@ def makeDict(speaker,csvOut,colNames):
 	phonwords = speaker.phonwordsList
 
 	## Pick up all the [t] (and [d]?)
-	speaker.getTokens('t')
-	tphs = speaker.tList
+	tphs = speaker.getTokens('t')
 	dictList = []
 	wdIndex = 0
 	syllIndex = 0
@@ -53,35 +52,34 @@ def makeDict(speaker,csvOut,colNames):
 		count = -1 
 		while count < 0:
 			if phs.index(t)+count < 0:
-				prevSeg = "FILE-START"
+				valDict['prevSeg'] = "FILE-START"
 				print "Too low!"
 				break
 			else:
-				prevSeg = phs[phs.index(t)+count].firstChild.data
-			if prevSeg != 'SIL':
-				# print 'Stopping now!'
+				prevSeg = phs[phs.index(t)+count]
+			if prevSeg.firstChild.data != 'SIL':
+				valDict['prevSeg'] = prevSeg.firstChild.data
 				break
 			else:
 				count -= 1
 				# print 'Increasing count'
-		valDict['prevSeg'] = prevSeg
+		
 		## Following segment
 		count = 1 
 		while count > 0:
 			try:
-				follSeg = phs[phs.index(t)+count].firstChild.data
+				follSeg = phs[phs.index(t)+count]
 				# print follSeg
 			except IndexError:
-				follSeg = "FILE-END"
+				valDict['follSeg'] = "FILE-END"
 				print 'out of range'
 				break
-			if follSeg != 'SIL':
-				# print 'Stopping now!'
+			if follSeg.firstChild.data != 'SIL':
+				valDict['follSeg'] = follSeg.firstChild.data
 				break
 			else:
 				count += 1
-				print 'Increasing count'
-		valDict['follSeg'] = follSeg
+				# print 'Increasing count'
 
 		## Find the ID of the syllable I'm in 
 		for s in sylls[syllIndex:]:
@@ -89,11 +87,32 @@ def makeDict(speaker,csvOut,colNames):
 			if t.getAttribute('nite:id') in childPhones:
 				valDict['syllableNode'] = s
 				syllIndex = sylls.index(s)
-				print "Found syllable node : " + valDict['syllableNode'].getAttribute('nite:id')
+				# print "Found syllable node : " + valDict['syllableNode'].getAttribute('nite:id')
 				break
 			else:
 				continue
 		assert valDict['syllableNode'], "Couldn't find a syllable for "+ t 
+
+		## Is the next syllable stressed?
+		valDict['follSegSyllable'] = 'ERROR'
+		valDict['follSyllStress'] = 'ERROR'
+		if valDict['follSeg'] != 'FILE-END':
+			for s in sylls[syllIndex:]:
+				childPhones = getChildren(s,speaker.phonesTree)
+				if follSeg.getAttribute('nite:id') in childPhones:
+					valDict['follSegSyllable'] = s
+					try:
+						valDict['follSyllStress'] = valDict['follSegSyllable'].getAttribute('stress')
+					except Exception, e:
+						raise e
+					break
+				
+				else:
+					continue
+		else:
+			valDict['follSegSyllable'] = 'FILE-END'
+			valDict['follSyllStress'] = 'NA'
+
 		## Am I in a stressed syllable? p = primary, s=secondary, n=none. Some syllables have no stress attribute.
 		if valDict['syllableNode'].hasAttribute('stress') == False:
 			valDict['stressedSyll'] = 'NA'
@@ -109,7 +128,6 @@ def makeDict(speaker,csvOut,colNames):
 				valDict['wordOrth'] = myWord.getAttribute('orth')
 				valDict['wordStress'] = myWord.getAttribute('stressProfile')
 				valDict['wordID'] = myWord.getAttribute('nite:id')
-				print 'Found it!: ' + valDict['wordOrth']
 				break
 		# assert type(valDict['wordOrth']) == str, "Couldn't find a word for " + valDict['syllableNode'].getAttribute('nite:id')
 
@@ -128,14 +146,23 @@ def makeDict(speaker,csvOut,colNames):
 		else: 
 			valDict['wordBoundaryRight'] = "Y"
 
-		# mySyll.getAttribute('msstate') == t.getAttribute('msstate')
+
+		# Is the token in a flapping environment?
+		if re.search('[aeiou]',valDict['prevSeg']) and re.search('[aeiou]',valDict['follSeg']):
+			valDict['flappingEnvt'] = 'Y'
+		else:
+			valDict['flappingEnvt'] = 'N'
+
+
 		dictList.append(valDict)
 
 	for d in dictList:
 		csvOut.writerow([d[v] for v in header])
 	return dictList
 
-header = ['fileID','msstate','nite:start','nite:end','duration','nite:id','prevSeg','follSeg','wordOrth','wordStress','wordID','wordBoundaryLeft','wordBoundaryRight']
+header = ['fileID','msstate','nite:start','nite:end','duration','nite:id','prevSeg','follSeg','stressedSyll','follSyllStress','wordOrth','wordStress','wordID','wordBoundaryLeft','wordBoundaryRight','flappingEnvt']
+
+potentialTokens = 0
 
 def xmlExtract(fileName,dataName,colNames):
     with open(dataName, 'wb') as data:
@@ -158,8 +185,8 @@ def xmlExtract(fileName,dataName,colNames):
 
 
 # myPath = '/Users/oriana/Corpora/nxt_switchboard_ann/xml/'
-xmlExtract("sw4168.*xml","sw4168-flapping-switchboard.txt",header)
-# xmlExtract(".*xml","flapping-switchboard.txt",header)
+# xmlExtract("sw2005.*xml","2005-flapping-switchboard.txt",header)
+xmlExtract(".*xml","flapping-switchboard.txt",header)
 
 
 # Print summary stats. 

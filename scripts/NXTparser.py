@@ -13,6 +13,19 @@ mainTags = {
 	'phrases':'phrase'
 }
 
+class Token(minidom.Element):
+	tokenList = []
+	def __init__(self,tagName,node,speaker):
+		self.tagName = tagName
+		self.node = node
+		self.speaker = speaker
+		minidom.Element.__init__(self,tagName)
+		self._attrs.update(node._attrs)
+		Token.tokenList.append(self)
+
+
+
+
 class Speaker:
 	'One speaker in a dialogue with a unique ID number.'
 
@@ -36,8 +49,8 @@ class Speaker:
 
 	def getTokens(self,phone):
 		assert hasattr(self,'phonesList'), "Need to create a phonesList first. Try using the makeTree(phones) method."
-		tokenList = [t for t in self.phonesList if t.firstChild.data=='t']
-		setattr(self,phone+'List',tokenList)
+		tokenList = [t for t in self.phonesList if t.firstChild.data==phone]
+		return tokenList
 
 # Gets the nodes corresponding to those defined by nite:child
 def getChildren(node,childTree):
@@ -60,16 +73,6 @@ def getChildren(node,childTree):
 			childIDs.append(prefix+str(n))
 		# print childIDs
 	return childIDs
-
-# class Token:
-# 	"""docstring for Token"""
-# 	def __init__(self, phone, speaker):
-# 		self.phone = phone
-# 		self.speaker = speaker
-
-		
-
-
 
 
 
