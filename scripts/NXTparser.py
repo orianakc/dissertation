@@ -60,7 +60,7 @@ def getChildren(node,childTree):
 	# print idStartEnd
 	childIDs = []
 	if idStartEnd[0]==idStartEnd[-1]:
-		childIDs = re.search('id\((\w*)\)',idStartEnd[0]).groups()[0]
+		childIDs.append(re.search('id\((\w*)\)',idStartEnd[0]).groups()[0])
 		# print "Only 1 child : " + " ".join(childIDs)
 	else:
 		assert len(idStartEnd)==2, "Can't find first/last child IDs for %s" % str(node)
