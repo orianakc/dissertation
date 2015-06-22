@@ -5,166 +5,112 @@ from xml.dom import minidom
 import os
 import re
 import csv
+import datetime
+from CSJhelper import * 
 
 
-''' Generates a list of Phoneme objects in 'tree' whose value is in 'myList'.
-'''
-def getPhonemes(tree,myList):
-	phonemeList = [p for p in tree.getElementsByTagName("Phoneme") if p.attributes['PhonemeEntity'].value in myList]
-	return phonemeList
+phonemeNames = ['i','u'] # These are the names of the phonemes to be extracted
 
+def makeDict(tree,fileName,phonemeNames,csvWriter,colNames):
+	phonemeList = tree.getElementsByTagName("Phoneme")
+	moraList = tree.getElementsByTagName("Mora")
+	tokensToGet = [p for p in tree.getElementsByTagName("Phoneme") if p.attributes['PhonemeEntity'].value in phonemeNames]
+	# Speaker-level speech rate.
 
-''' For a Phoneme object, grab the child Phone objects which are vowels, making sure that there is exactly one of them
-'''
-def getVowelPhone(myPhoneme):
-	phones = [ph for ph in myPhoneme.getElementsByTagName("Phone") if ph.attributes['PhoneClass'].value=="vowel"]
-    ## there should be 0 or 1 vowel phone corresponding to this phoneme.  (not sure why there can be 0)
-	try:
-		assert len(phones)<=1
-	except:
-		print "More than 1 vowel phone!"
-		# continue
-    ## why does this happen?
-	if len(phones)==0:
-		print "High V phoneme without corresponding high V phone -- 	skipping"
-		# continue
-	phone = phones[0]
-	return phone
+	dictList = []
 
+	for i in tokensToGet:
+		valDict = {}
+		t = Token('Phoneme',i,tree.firstChild.getAttribute('TalkID'))
+		t.getTokenInfo(valDict,phonemeList)
+		t.getMoraInfo(valDict)
+		t.getWordInfo(valDict)
+		t.devoicingEnvt(valDict)
+		t.getIPUInfo(valDict)
+		vPhone = [n for n in t.node.getElementsByTagName('Phone') if n.getAttribute('PhoneClass') == 'vowel']
+		assert len(vPhone) == 1, "Can't get vowel phone."
+		vPhone = vPhone[0]
+		valDict['Devoiced'] = '1' if vPhone.getAttribute('Devoiced')==1 else '0'
+		tokenDict = [t,valDict]
+		dictList.append(tokenDict)
 
-'''Check whether a Phoneme object is flanked by (1) a voiceless consonant in the same Mora, and (2) the next Phoneme is a voiceless consonant. 
-'''
-
-def devoicingEnvt(myPhoneme):
-	pass
-
-
-## List of voiceless phonemes:
-voiceless = {  u'c',
- u'cj',
- u'cy',
- u'h',
- u'hj',
- u'hy',
- u'k',
- u'kj',
- u'ky',
- u'p',
- u'py',
- u'pj',
- u's',
- u'sj',
- u'sy',
- u't',
- u'tj',
- u'ty'}
+	## Check for consecutive devoicing. 
+	for prev, item, nxt in previous_and_next(dictList):
+		if prev != None:
+			dvL = True if moraList.index(prev[0].mora)+1 == moraList.index(item[0].mora) else False
+		else: 
+			dvL = False
+		if nxt != None and moraList.index(nxt[0].mora) < len(moraList):
+			dvR = True if moraList.index(item[0].mora)+1 == moraList.index(nxt[0].mora) else False
+		else:
+			dvR = False
+		if dvL == True and dvR == True:
+			item[1]['adjacentDevoiceable'] = 'both'
+		elif dvL == True and dvR == False:
+			item[1]['adjacentDevoiceable'] = 'left'
+		elif dvL == False and dvR == True:
+			item[1]['adjacentDevoiceable'] = 'right'
+		elif dvL == False and dvR == False:
+			item[1]['adjacentDevoiceable'] = 'none'
+		else:
+			item[1]['adjacentDevoiceable'] = 'ERROR'
+	for d in dictList:
+		csvOut.writerow([d[1][v] for v in colNames])
 
 
 ## Starting the actual extraction
 
-fileName = 'A01F0055.xml'#raw_input('What file shall I process for you? : ')
-tree = minidom.parse(fileName)
-allPhonemes = tree.getElementsByTagName("Phoneme")
+dataDir = '/Users/oriana/dissertation/data/CSJ/XML/'
+fileName = '.*xml'#raw_input('What file shall I process for you? : ')
+outputFile = 'csjHVDdata.txt'
 
-dictList = []
+colNames = ['Phoneme',
+ 'Accent',
+ 'Lemma',
+ 'nextPhoneme',
+ 'follPauseDuration',
+ 'ToneLabel',
+ 'prevPhonemeManner',
+ 'FinalInIPU',
+ 'POS',
+ 'onset',
+ 'nextPhonemeManner',
+ 'follPause',
+ 'adjacentDevoiceable',
+ 'MoraDuration',
+ 'MoraEntity',
+ 'MoraID',
+ 'phonemeDuration',
+ 'ToneClass',
+ 'TalkID',
+ 'phonemeLength',
+ 'prevPhoneme',
+ 'Orthography',
+ 'IPUSpeechRate',
+ 'hvdEnvt',
+ 'vclsOnset',
+ 'Devoiced',
+ 'wordBoundaryRight',
+ 'BreakIndex']
 
-# Grab all high vowel phonemes
-highVPhonemes = getPhonemes(tree,['i','u'])
-
-for V in highVPhonemes:
-	valDict = {} ## stuff you'll want to print out in each row
-	valDict['object'] = V
-	valDict['file'] = fileName
-	## what phoneme is this?
-	valDict['phoneme'] = V.attributes['PhonemeEntity'].value
-	phone = getVowelPhone(V)
-	phoneVars = ["Devoiced", "PhoneStartTime", "PhoneEndTime", "PhoneEntity"]
-
-	for var in phoneVars:
-		if var in phone.attributes.keys():
-			valDict[var] = phone.attributes[var].value
-		else:
-			valDict[var] = '0'
-	valDict['PhoneDuration'] = float(valDict['PhoneEndTime']) - float(valDict['PhoneStartTime'])
-	
-	## Information about the containing Mora
-	mora = V.parentNode
-	try:
-		assert V.parentNode.tagName == 'Mora'
-	except:
-		print "This Phoneme has no parent Mora:" + V
-		continue
-	for k in ['MoraEntity','MoraID']:
-		valDict[k] = mora.attributes[k].value
-	
-	## Mora duration
-	moraPhones = mora.getElementsByTagName('Phone')
-	valDict['MoraStart'] = moraPhones[0].attributes['PhoneStartTime'].value
-	valDict['MoraEnd'] = moraPhones[-1].attributes['PhoneEndTime'].value
-	valDict['MoraDuration'] = float(valDict['MoraEnd']) - float(valDict['MoraStart'])
-
-	## Info about surrounding segments. 
-	#### Check for the onset of the mora.
-	moraPhonemes = mora.getElementsByTagName('Phoneme')
-	if moraPhonemes[0].isSameNode(V):
-		valDict['onset'] = 'NoOnset'
-	else:
-		valDict['onset'] = moraPhonemes[0].attributes['PhonemeEntity'].value
-	## What is the next phoneme
-	vIndex = allPhonemes.index(V)
-	if vIndex == len(allPhonemes)-1:
-		valDict['follPhoneme'] = 'END'
-	else: 
-		nextPhoneme = allPhonemes[vIndex+1]
-		valDict['follPhoneme'] = nextPhoneme.attributes['PhonemeEntity'].value
-	
-	## Are both preceding and following segments voiceless?
-	if valDict['onset'] in voiceless:
-		valDict['onsetVcls'] = 'Y'
-	else:
-		valDict['onsetVcls'] = 'N'
-	if valDict['follPhoneme'] in voiceless:
-		valDict['follVcls'] = 'Y'
-	else:
-		valDict['follVcls'] = 'N'
-	
-	## Get the pause duration by calculating Start of nextPhoneme - end of current Phoneme
-	if valDict['follPhoneme'] != 'END':
-		valDict['Pause'] = float(nextPhoneme.getElementsByTagName('Phone')[0].attributes['PhoneStartTime'].value) - float(valDict['PhoneEndTime'])
-	else:
-		valDict['Pause'] = 'END'
-
-	## Break information 
-	breakList = V.getElementsByTagName('XJToBILabelBreak')
-	if breakList != []:
-		valDict['Break'] = breakList[0].firstChild.data
-	else:
-		valDict['Break'] = 'None'
-
-	# Tone information
-	toneTags = V.getElementsByTagName('XJToBILabelTone')
-	valDict['Accent'] = 'N'
-	valDict['ToneClass'] = 'NA'
-	valDict['ToneLabel'] = 'NA'
-	if toneTags !=[]:
-		for t in toneTags:
-			if t.attributes['ToneClass'].value == 'accent':
-				valDict['Accent'] = 'Y'
-			else:
-				valDict['ToneClass'] = t.attributes['ToneClass'].value
-				valDict['ToneLabel'] = t.firstChild.data
-
-
-	## Add this entry to dictList to print out later. 
-	dictList.append(valDict)
-
-
-## Things to get:
-## Source file
-## ID no.
-## Phone duration
-## Mora duration
-## Average mora duration?
+ts = datetime.datetime.now()
+with open(outputFile, 'wb') as data:
+    csvOut = csv.writer(data,delimiter="\t",quotechar='"')
+    csvOut.writerow(colNames)
+    for root, dirs, files in os.walk(dataDir):
+        for fname in files:
+            if re.search(fileName, fname):
+                print 'Opening ' + fname + " at " +  str(datetime.datetime.now())
+                try:
+                    tree = minidom.parse(os.path.join(dataDir,fname))
+                    makeDict(tree,fname,phonemeNames,csvOut,colNames)
+                except ValueError as e:
+                    print "problem opening %s" % fname
+                    print e           			                
+    print 'Writing out CSV file at ' + str(datetime.datetime.now())    
+tf = datetime.datetime.now()
+te = tf - ts
+print 'This took %s seconds' % str(te)
 
 
 
