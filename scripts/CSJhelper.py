@@ -6,6 +6,27 @@ import os
 import re
 import csv
 
+def scriptSetup():
+	user = raw_input('User name : ')
+	if user == 'oriana':
+		dataDir = '/Users/oriana/dissertation/data/CSJ/XML/'
+	elif user == 'mlml':
+		dataDir = '/Users/mlml/Corpora/CorpusOfSpontaneousJapanese/Japanese/Vol2/XML/core/'
+	else: 
+		print 'Unknown user, please setup information:'
+		dataDir = raw_input('Path to XML files : ')
+	setting = raw_input('Settings (all/other): ')
+	if setting == 'all':
+		fileName = '.*xml'#raw_input('What file shall I process for you? : ')
+		outputFile = 'csjHVDdata.txt'
+	else:
+		fileName = raw_input('What file shall I process for you? (regular expressions accepted): ')
+		outputFile = raw_input('Name of output file : ')
+
+	return (dataDir,fileName,outputFile)
+
+		
+
 ## Function found at http://stackoverflow.com/questions/1011938/python-previous-and-next-values-inside-a-loop
 from itertools import tee, islice, chain, izip
 
@@ -157,7 +178,8 @@ posDict = {
  '\xe8\xa8\x98\xe5\x8f\xb7':'Symbol' ,
  '\xe5\x90\x8d\xe8\xa9\x9e':'Noun',
  '\xe6\x8e\xa5\xe5\xb0\xbe\xe8\xbe\x9e':'Suffix',
- '\xe8\xa8\x80\xe3\x81\x84\xe3\x82\x88\xe3\x81\xa9\xe3\x81\xbf':'Disfluencies'
+ '\xe8\xa8\x80\xe3\x81\x84\xe3\x82\x88\xe3\x81\xa9\xe3\x81\xbf':'Disfluencies',
+ '':'ERROR'
 }
 
 

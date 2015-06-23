@@ -9,6 +9,7 @@ import datetime
 from CSJhelper import * 
 
 
+
 phonemeNames = ['i','u'] # These are the names of the phonemes to be extracted
 
 def makeDict(tree,fileName,phonemeNames,csvWriter,colNames):
@@ -55,14 +56,16 @@ def makeDict(tree,fileName,phonemeNames,csvWriter,colNames):
 		else:
 			item[1]['adjacentDevoiceable'] = 'ERROR'
 	for d in dictList:
-		csvOut.writerow([d[1][v] for v in colNames])
+		csvOut.writerow([d[1][v] if v in d[1].keys() else 'KeyError' for v in colNames])
 
 
 ## Starting the actual extraction
 
-dataDir = '/Users/oriana/dissertation/data/CSJ/XML/'
-fileName = '.*xml'#raw_input('What file shall I process for you? : ')
-outputFile = 'csjHVDdata.txt'
+setupInfo = scriptSetup()
+dataDir = setupInfo[0]
+fileName = setupInfo[1]
+outputFile = setupInfo[2]
+
 
 colNames = ['Phoneme',
  'Accent',
