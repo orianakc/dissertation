@@ -10,11 +10,11 @@ import csv
 import datetime
 from CSJhelper import * 
 
-import pickle
-
 phonemeNames = ['i','u'] # These are the names of the phonemes to be extracted
 
 def makeDict(tree,fileName,phonemeNames,csvWriter,colNames):
+	for item in tree.getElementsByTagName('Phone'):
+		item.setIdAttribute('PhoneStartTime')
 	phonemeList = tree.getElementsByTagName("Phoneme")
 	moraList = tree.getElementsByTagName("Mora")
 	tokensToGet = [p for p in tree.getElementsByTagName("Phoneme") if p.attributes['PhonemeEntity'].value in phonemeNames]
@@ -82,7 +82,9 @@ fileName = setupInfo[1]
 outputFile = setupInfo[2]
 
 
-colNames = ['Phoneme',
+colNames = ['TalkID',
+ 'startTime',
+ 'Phoneme',
  'Accent',
  'Lemma',
  'nextPhoneme',
@@ -100,7 +102,6 @@ colNames = ['Phoneme',
  'MoraID',
  'phonemeDuration',
  'ToneClass',
- 'TalkID',
  'phonemeLength',
  'prevPhoneme',
  'Orthography',

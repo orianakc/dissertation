@@ -5,6 +5,7 @@ from xml.dom import minidom
 import os
 import re
 import csv
+import argparse
 
 def scriptSetup():
 	user = raw_input('User name : ')
@@ -25,7 +26,6 @@ def scriptSetup():
 
 	return (dataDir,fileName,outputFile)
 
-		
 
 ## Function found at http://stackoverflow.com/questions/1011938/python-previous-and-next-values-inside-a-loop
 from itertools import tee, islice, chain, izip
@@ -74,6 +74,8 @@ class Token(minidom.Element):
 		self.setAttribute('endTime',childPhones[-1].getAttribute('PhoneEndTime'))
 		assert float(self.getAttribute('endTime')) > float(self.getAttribute('startTime')), "Problem getting phoneme duration" 
 		valDict['phonemeDuration'] = float(self.getAttribute('endTime')) - float(self.getAttribute('startTime'))
+		valDict['startTime'] = self.getAttribute('startTime')
+		valDict['endTime'] = self.getAttribute('endTime')
 
 		# Pause
 		pausePhone = [n for n in self.node.getElementsByTagName('Phone') if n.getAttribute('PhoneClass') == 'others']
