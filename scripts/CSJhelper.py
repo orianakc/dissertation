@@ -6,6 +6,7 @@ import os
 import re
 import csv
 import argparse
+import datetime
 
 def scriptSetup():
 	user = raw_input('User name : ')
@@ -19,7 +20,7 @@ def scriptSetup():
 	setting = raw_input('Settings (all/other): ')
 	if setting == 'all':
 		fileName = '.*xml'#raw_input('What file shall I process for you? : ')
-		outputFile = 'csjHVDdata.txt'
+		outputFile = ''.join(['csjHVDdata',datetime.datetime.now().isoformat(),'.txt'])
 	else:
 		fileName = raw_input('What file shall I process for you? (regular expressions accepted): ')
 		outputFile = raw_input('Name of output file : ')
@@ -78,7 +79,7 @@ class Token(minidom.Element):
 		valDict['endTime'] = self.getAttribute('endTime')
 
 		# Pause
-		pausePhone = [n for n in self.node.getElementsByTagName('Phone') if n.getAttribute('PhoneClass') == 'others']
+		pausePhone = [n for n in self.node.getElementsByTagName('Phone') if n.getAttribute('PhoneEntity') == 'SpzS']
 		if len(pausePhone)==0:
 			valDict['follPause'] = 'N'
 			valDict['follPauseDuration'] = 'NA'
