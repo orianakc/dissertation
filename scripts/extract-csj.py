@@ -20,7 +20,7 @@ def makeDict(tree,fileName,phonemeNames,csvWriter,colNames):
 	tokensToGet = [p for p in tree.getElementsByTagName("Phoneme") if p.attributes['PhonemeEntity'].value in phonemeNames]
 	# Speaker-level speech rate.
 
-	
+	dictList = []
 
 
 
