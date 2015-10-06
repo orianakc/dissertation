@@ -27,6 +27,7 @@ def makeDict(tree,fileName,phonemeNames,csvWriter,colNames):
 	for num, i in enumerate(tokensToGet):
 		valDict = {}
 		t = Token('Phoneme',i,tree.firstChild.getAttribute('TalkID'))
+		
 		t.getTokenInfo(valDict,phonemeList)
 		t.getMoraInfo(valDict)
 		t.getWordInfo(valDict)
