@@ -1,7 +1,7 @@
 ## Script to extract data from Corpus of Spontaneous Japanese XML annotation files
 ## Oriana, May 2015
 
-## "argparse" !
+## To do: "argparse" !
 
 from xml.dom import minidom
 import os
@@ -20,7 +20,7 @@ def makeDict(tree,fileName,phonemeNames,csvWriter,colNames):
 	tokensToGet = [p for p in tree.getElementsByTagName("Phoneme") if p.attributes['PhonemeEntity'].value in phonemeNames]
 	# Speaker-level speech rate.
 
-	dictList = []
+	
 
 
 
